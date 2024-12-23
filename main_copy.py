@@ -234,7 +234,7 @@ def evaluate(args):
 def visualize(args):
     config = yaml.safe_load(open(args.config, "r"))
     model = build_model(config)
-    checkpoint = torch.load(args.checkpoint)
+    checkpoint = torch.load(args.checkpoint, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint["model_state_dict"])
     vis_dataset, vis_dataloader = build_vis_data_loader(args, config, batch_size=1)
     model.eval()
