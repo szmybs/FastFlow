@@ -239,8 +239,7 @@ def visualize(args):
     vis_dataset, vis_dataloader = build_vis_data_loader(args, config, batch_size=1)
     model.eval()
     
-    # device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cpu')
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     model.to(device)
     
     def plt_density_map(imgs, mask=None, save_path=None):        
@@ -277,8 +276,7 @@ def visualize(args):
             plt.show()
         else:
             plt.savefig(save_path, pad_inches=0.2, bbox_inches='tight')
-            plt.show()
-            # plt.close()
+            plt.close()
         return
     
     density_jigsaw_puzzle = vis_dataset.meta_jigsaw_puzzle('F')

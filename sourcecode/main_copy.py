@@ -239,8 +239,7 @@ def visualize(args):
     vis_dataset, vis_dataloader = build_vis_data_loader(args, config, batch_size=1)
     model.eval()
     
-    # device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    device = torch.device('cpu')
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     model.to(device)
     
     def plt_density_map(imgs, mask=None, save_path=None):        
@@ -277,8 +276,7 @@ def visualize(args):
             plt.show()
         else:
             plt.savefig(save_path, pad_inches=0.2, bbox_inches='tight')
-            plt.show()
-            # plt.close()
+            plt.close()
         return
     
     density_jigsaw_puzzle = vis_dataset.meta_jigsaw_puzzle('F')
@@ -288,8 +286,8 @@ def visualize(args):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     # save_path = None
-    
-    threshold = args.threshold
+   
+    threshold = args.threshold     
     for step, data in enumerate(vis_dataloader):
         ori_img, data, targets = data
         # data = data.cuda()
@@ -333,21 +331,16 @@ def visualize(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train FastFlow on MVTec-AD dataset")
+    parser = argparse.ArgumentParser(description="Use FastFlow for Defect Localization")
     parser.add_argument(
         "--config", type=str, help="path to config file",
         default="configs/resnet18.yaml"
     )
-    parser.add_argument("--data", type=str, help="path to mvtec folder",
-                        default="./mvtec-ad")
-    parser.add_argument(
-        "--category",
-        type=str,
-        default="plate"
-    )
+    parser.add_argument("--data", type=str, help="path to mvtec folder", default="data")
+    parser.add_argument("--category", type=str, default="plate")
     parser.add_argument("--mode", default="vis")
     parser.add_argument(
-        "--checkpoint", type=str, help="path to load checkpoint", default="_fastflow_experiment_checkpoints/exp0/500.pt"
+        "--checkpoint", type=str, help="path to load checkpoint", default="checkpoints/500.pt"
     )
     parser.add_argument("--plt_roc_curve", type=bool, default=False)
     parser.add_argument("--threshold", type=float, default=-0.4)

@@ -243,7 +243,7 @@ def visualize(args):
     device = torch.device('cpu')
     model.to(device)
     
-    def plt_density_map(imgs, mask=None, save_path=None):        
+    def plt_density_map(imgs, mask=None, save_path=None, only_save=False):        
         fig = plt.figure(figsize=[23, 4])
         gs = matplotlib.gridspec.GridSpec(1, 22)
         
@@ -276,9 +276,12 @@ def visualize(args):
         if save_path is None:
             plt.show()
         else:
-            plt.savefig(save_path, pad_inches=0.2, bbox_inches='tight')
-            plt.show()
-            # plt.close()
+            if not only_save:
+                plt.savefig(save_path, pad_inches=0.2, bbox_inches='tight')
+                plt.show()
+            else:
+                plt.savefig(save_path, pad_inches=0.2, bbox_inches='tight')
+                plt.close()                
         return
     
     density_jigsaw_puzzle = vis_dataset.meta_jigsaw_puzzle('F')
@@ -288,8 +291,8 @@ def visualize(args):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     # save_path = None
-    
-    threshold = args.threshold
+   
+    threshold = args.threshold     
     for step, data in enumerate(vis_dataloader):
         ori_img, data, targets = data
         # data = data.cuda()
@@ -322,7 +325,7 @@ def visualize(args):
                 density = transforms.ToTensor()(jigsaw_density).numpy().squeeze()
                 density_mask = np.where(density<=-0.99, 0, 1)
                 if save_path:
-                    plt_density_map([img, density], mask=density_mask, save_path=os.path.join(save_path, str(step)+'.png'))
+                    plt_density_map([img, density], mask=density_mask, save_path=os.path.join(save_path, str(step)+'.png'), only_save=args.only_save)
                 else:
                     plt_density_map([img, density], mask=density_mask)
     
@@ -333,24 +336,20 @@ def visualize(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train FastFlow on MVTec-AD dataset")
+    parser = argparse.ArgumentParser(description="Use FastFlow for Defect Localization")
     parser.add_argument(
         "--config", type=str, help="path to config file",
         default="configs/resnet18.yaml"
     )
-    parser.add_argument("--data", type=str, help="path to mvtec folder",
-                        default="./mvtec-ad")
-    parser.add_argument(
-        "--category",
-        type=str,
-        default="plate"
-    )
+    parser.add_argument("--data", type=str, help="path to data folder", default="data")
+    parser.add_argument("--category", type=str, default="plate")
     parser.add_argument("--mode", default="vis")
     parser.add_argument(
-        "--checkpoint", type=str, help="path to load checkpoint", default="_fastflow_experiment_checkpoints/exp0/500.pt"
+        "--checkpoint", type=str, help="path to load checkpoint", default="checkpoints/500.pt"
     )
     parser.add_argument("--plt_roc_curve", type=bool, default=False)
     parser.add_argument("--threshold", type=float, default=-0.4)
+    parser.add_argument("--only_save", type=bool, default=False)
     args = parser.parse_args()
     return args
 
