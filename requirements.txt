@@ -1,7 +1,12 @@
-timm==0.5.4
-torch==1.9.1
-torchvision==0.10.1
-pyyaml==6.0
-pytorch-ignite==0.2.0
-scikit-learn==0.24.2
-FrEIA @ git+https://github.com/VLL-HD/FrEIA@1779d1fba1e21000fda1927b59eeac0a6fcaa284
+默认情况下：
+1. 用于测试的数据放在data/plate/test中
+2. checkpoints & configs & data文件夹和exe文件需要在同一目录下
+3. 结果图会生成到与exe文件同目录的results_imgs文件夹下，可以无视跳跃的编号
+
+
+可以在cmd命令行中运行exe并指定一些参数：
+	--data: 指定的数据目录，默认为./data（指定目录下需要有plate/test路径存在，并且数据存放在test中）（即数据存放的路径应为 "指定目录"/plate/test）
+                --checkpoint: 指定的模型文件，默认为./checkpoints/500.pt
+                --plt_roc_curve: 是否选择绘制ROC曲线（True / False），默认为False
+                --threshold：指定的分类边界（数值在-1到0之间），默认为-0.4。模型输出值在（-1，threshold）之间的像素被认为存在异常，值在（threshold， 0）之间的像素被认为不存在异常
+		--only_save：是否仅保存结果（True / False），默认为False，即直接显示结果的同时保存输出到results_imgs文件夹下，若为True则仅保存不显示

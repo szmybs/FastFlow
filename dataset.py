@@ -154,7 +154,7 @@ class PlateDataset(torch.utils.data.Dataset):
         self.patch_edge = patch_edge_max
         self.patch_cols, self.patch_rows = (width // patch_width),  (height // patch_height)
         self.patch_nums = self.patch_cols * self.patch_rows
-        self.complete_jigsaw = Image.new('RGB', (self.img_width, self.img_height), color='white')
+        # self.complete_jigsaw = Image.new('RGB', (self.img_width, self.img_height), color='white')
         return
     
     
@@ -200,3 +200,6 @@ class PlateDataset(torch.utils.data.Dataset):
             else:
                 return None
         return jigsaw_puzzle
+    
+
+
