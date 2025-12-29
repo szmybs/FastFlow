@@ -500,9 +500,6 @@ class ImageHandler(FileSystemEventHandler):
         '''
         return
 
-    def on_modified(self, event):
-        print("No processing is needed for this modified event.")
-
 
 def watchingdog(args):
     config = yaml.safe_load(open(args.config, "r"))
