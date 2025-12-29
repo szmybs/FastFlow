@@ -4,7 +4,7 @@ import matplotlib.colors
 import matplotlib.gridspec
 
 
-def plt_density_map(imgs, mask=None, save_path=None, only_save=False):        
+def plt_density_map(imgs, mask=None, save_path=None, only_save=False, plt_duration=20):        
     fig = plt.figure(figsize=[23, 4])
     gs = matplotlib.gridspec.GridSpec(1, 22)
     
@@ -40,7 +40,7 @@ def plt_density_map(imgs, mask=None, save_path=None, only_save=False):
         if not only_save:
             plt.savefig(save_path, pad_inches=0.2, bbox_inches='tight')
             plt.show(block=False)
-            plt.pause(5)
+            plt.pause(int(plt_duration))
             plt.close()
         else:
             plt.savefig(save_path, pad_inches=0.2, bbox_inches='tight')

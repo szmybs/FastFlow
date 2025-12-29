@@ -172,6 +172,7 @@ def eval_once(dataloader, model, device, **kwargs):
     # print("best threshold value corresponding FPR: {}".format(fpr[chosen_posit]))
 
     if "plt_roc_curve" in kwargs and kwargs["plt_roc_curve"]:
+        import matplotlib.pyplot as plt
         plt.figure()
         plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {auroc:.2f})')
         plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--', label='Chance')
@@ -321,33 +322,36 @@ class PlateDefectLocalMachine(object):
     
     def update_data(self, img_path):
         self.img_path = img_path
+        print(f"新图片文件 updated: {self.img_path}")
         return
 
 
     def segmentation(self):
-        image = Image.open(self.img_path)            
-        image = image.crop((0, 0, 1200, 672))
-        width, height = image.size
-        
-        self.image_patches = []
-        patch_width, patch_height = (400, 224)
-        patch_edge_max = max(patch_height, patch_width)
-        for top in range(0, height, patch_height):
-            for left in range(0, width, patch_width):
-                box_right = left + patch_width
-                box_bottom = top + patch_height
-                if box_right > width or box_bottom > height:
-                    continue
-                
-                box = (left, top, box_right, box_bottom)
-                paste_left = (patch_edge_max - patch_width) // 2
-                paste_top = (patch_edge_max - patch_height) // 2
-                
-                # image
-                patch = image.crop(box)
-                padded_patch = Image.new("RGB", (patch_edge_max, patch_edge_max), (0, 0, 0))
-                padded_patch.paste(patch, (paste_left, paste_top))                
-                self.image_patches.append(padded_patch)
+        with Image.open(self.img_path) as image:
+            print(f"新图片文件 opened: {self.img_path}")
+            # image = Image.open(self.img_path)            
+            image = image.crop((0, 0, 1200, 672))
+            width, height = image.size
+            
+            self.image_patches = []
+            patch_width, patch_height = (400, 224)
+            patch_edge_max = max(patch_height, patch_width)
+            for top in range(0, height, patch_height):
+                for left in range(0, width, patch_width):
+                    box_right = left + patch_width
+                    box_bottom = top + patch_height
+                    if box_right > width or box_bottom > height:
+                        continue
+                    
+                    box = (left, top, box_right, box_bottom)
+                    paste_left = (patch_edge_max - patch_width) // 2
+                    paste_top = (patch_edge_max - patch_height) // 2
+                    
+                    # image
+                    patch = image.crop(box)
+                    padded_patch = Image.new("RGB", (patch_edge_max, patch_edge_max), (0, 0, 0))
+                    padded_patch.paste(patch, (paste_left, paste_top))                
+                    self.image_patches.append(padded_patch)
                     
         self.img_width, self.img_height = width, height
         self.patch_width, self.patch_height = patch_width, patch_height
@@ -429,14 +433,42 @@ class PlateDefectLocalMachine(object):
         return jigsaw_puzzle
 
 
+
 def is_image(file_path):
     try:
+        # 先检查文件大小，确保文件写入完成
+        file_size = os.path.getsize(file_path)
+        if file_size == 0:
+            return False
+        
         img = Image.open(file_path)
-        img.verify()  # 验证图片
+        img.verify()  # 验证图像的完整性
         return True
-    except Exception:
+    except Exception as e:
+        print(f"验证失败: {file_path}, 错误信息: {e}")
         return False
 
+
+def is_file_complete(file_path):
+    try:
+        time.sleep(0.5)
+        initial_size = os.path.getsize(file_path)
+        time.sleep(0.5)  # 稍等0.5秒钟，看看文件大小是否变化
+        final_size = os.path.getsize(file_path)
+        return initial_size == final_size
+    except FileNotFoundError:
+        print(f"文件不存在: {file_path}")
+        return False
+    except PermissionError:
+        print(f"没有访问权限: {file_path}")
+        return False
+    except OSError as e:
+        print(f"其他OS错误 [{e.errno}]: {file_path} - {e.strerror}")
+        return False
+    except Exception as e:
+        print(f"未知错误: {file_path} - {str(e)}")
+        return False
+    
 
 class ImageHandler(FileSystemEventHandler):
     def __init__(self, model, input_size, threshold, device, result_queue, executor):
@@ -451,6 +483,11 @@ class ImageHandler(FileSystemEventHandler):
             return
         file_path = event.src_path
         print(f"新图片文件 detected: {file_path}")
+
+        while not is_file_complete(file_path):
+            print(f"等待文件完成写入: {file_path}")
+            time.sleep(1)
+
         self.pdlm.update_data(file_path)
         self.executor.submit(self.pdlm.processing, self.result_queue)
         '''
@@ -462,6 +499,9 @@ class ImageHandler(FileSystemEventHandler):
             print(file_path)
         '''
         return
+
+    def on_modified(self, event):
+        print("No processing is needed for this modified event.")
 
 
 def watchingdog(args):
@@ -493,7 +533,7 @@ def watchingdog(args):
         while True:
             if not result_queue.empty():
                 imgs, density_mask, img_path = result_queue.get()
-                print("开始处理新图片文件 started: {file_path}")
+                print(f"开始处理新图片文件 started: {img_path}")
                 labeled, num_features = ndimage.label(density_mask)
                 region_sizes = []
                 for i in range(1, num_features + 1):
@@ -509,7 +549,8 @@ def watchingdog(args):
                 plt_density_map(imgs=imgs, \
                                 mask=density_mask, \
                                 save_path=os.path.join(save_path, f"densitymap_{os.path.basename(img_path)}"), \
-                                only_save=args.only_save)
+                                only_save=args.only_save,
+                                plt_duration=args.vis_duration)
             time.sleep(1)  # 持续运行，直到手动停止
     except KeyboardInterrupt:
         observer.stop()
@@ -533,6 +574,7 @@ def parse_args():
     parser.add_argument("--threshold", type=float, default=-0.4)
     parser.add_argument("--only_save", type=bool, default=False)
     parser.add_argument("--post_threshold", type=int, default=2000)
+    parser.add_argument("--vis_duration", type=int, default=20)
     args = parser.parse_args()
     return args
 
